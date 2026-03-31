@@ -1,0 +1,6 @@
+name = "baratelas"
+pages_build_output_dir = "dist"
+
+[vars]
+# Add your environment variables here if needed
+# VITE_FIREBASE_API_KEY = "..."

@@ -1,0 +1,128 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the application, containing their preferences and favorites.",
+      "type": "object",
+      "properties": {
+        "favorites": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of product IDs favorited by the user."
+        }
+      }
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product listed in the application.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "store": { "type": "string" },
+        "affiliateLink": { "type": "string" },
+        "category": { "type": "string" },
+        "score": { "type": "number" },
+        "juros": { "type": "string" },
+        "isLowestPrice": { "type": "boolean" },
+        "lowStock": { "type": "boolean" }
+      },
+      "required": ["title", "price", "imageUrl", "store", "affiliateLink", "category", "score"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "A discount coupon for a store.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "code": { "type": "string" },
+        "store": { "type": "string" },
+        "discountPercent": { "type": "number" },
+        "discountValue": { "type": "number" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["title", "code", "store"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment/review left by a user on a product.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "text": { "type": "string" },
+        "rating": { "type": "number" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["productId", "userId", "userName", "text", "rating", "timestamp"]
+    },
+    "News": {
+      "title": "News",
+      "description": "A news article related to products or tech.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "img": { "type": "string" },
+        "author": { "type": "string" },
+        "date": { "type": "number" },
+        "category": { "type": "string" },
+        "readingTime": { "type": "string" },
+        "relatedProductId": { "type": "string" },
+        "slug": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "number" },
+        "featuredProduct": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "price": { "type": "string" },
+            "link": { "type": "string" },
+            "img": { "type": "string" }
+          }
+        }
+      },
+      "required": ["title", "slug", "content", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user data, including favorites."
+    },
+    "/produtos/{productId}": {
+      "schema": {
+        "$ref": "#/entities/Product"
+      },
+      "description": "Stores product information."
+    },
+    "/cupons/{couponId}": {
+      "schema": {
+        "$ref": "#/entities/Coupon"
+      },
+      "description": "Stores discount coupons."
+    },
+    "/comentarios/{commentId}": {
+      "schema": {
+        "$ref": "#/entities/Comment"
+      },
+      "description": "Stores product comments and reviews."
+    },
+    "/news/{newsId}": {
+      "schema": {
+        "$ref": "#/entities/News"
+      },
+      "description": "Stores news articles."
+    }
+  }
+}

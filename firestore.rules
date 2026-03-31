@@ -1,0 +1,134 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - favorites: list of strings (optional) - List of product IDs favorited by the user
+    //   - role: string (optional) - User role (e.g., 'admin')
+    //
+    // Collection: produtos
+    // Document ID: {productId}
+    // Fields: [title, price, store, imageUrl, score, etc.]
+    //
+    // Collection: cupons
+    // Document ID: {couponId}
+    // Fields: [title, code, store, discountPercent, etc.]
+    //
+    // Collection: comentarios
+    // Document ID: {commentId}
+    // Fields: [productId, userId, userName, text, rating, timestamp]
+    //
+    // Collection: news
+    // Document ID: {newsId}
+    // Fields: [title, subtitle, content, imageUrl, author, date, relatedProductId]
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    // Check if the user is authenticated
+    function isAuthenticated() {
+       return request.auth != null;
+    }
+    
+    // Check if user owns the resource
+    function isOwner(userId) {
+       return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Check if user is admin
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "baratelascreate@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    // Validate that a list is a list and enforces size limits
+    function isValidList(list, maxSize) {
+      return list is list && list.size() <= maxSize;
+    }
+    
+    // Validate User Document
+    function isValidUser() {
+      let data = request.resource.data;
+      let hasOnlyAllowed = data.keys().hasOnly(['favorites', 'role']);
+      let validFavorites = !('favorites' in data) || isValidList(data.favorites, 1000);
+      let validRole = !('role' in data) || (data.role is string && data.role in ['admin', 'user']);
+      return hasOnlyAllowed && validFavorites && validRole;
+    }
+
+    // Validate Comment Document
+    function isValidComment() {
+      let data = request.resource.data;
+      let hasOnlyAllowed = data.keys().hasOnly(['productId', 'userId', 'userName', 'userPhoto', 'text', 'rating', 'timestamp']);
+      let hasRequired = data.keys().hasAll(['productId', 'userId', 'userName', 'text', 'rating', 'timestamp']);
+      let validProductId = data.productId is string && data.productId.size() > 0;
+      let validUserId = data.userId is string && data.userId == request.auth.uid;
+      let validUserName = data.userName is string && data.userName.size() > 0 && data.userName.size() < 100;
+      let validText = data.text is string && data.text.size() > 0 && data.text.size() < 1000;
+      let validRating = data.rating is number && data.rating >= 1 && data.rating <= 5;
+      let validTimestamp = data.timestamp is number;
+      return hasOnlyAllowed && hasRequired && validProductId && validUserId && validUserName && validText && validRating && validTimestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser() && (!('role' in request.resource.data) || isAdmin());
+      allow update: if isOwner(userId) && isValidUser() && (request.resource.data.role == resource.data.role || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /{path=**}/avaliacoes/{id} {
+      allow read: if true;
+    }
+    match /{path=**}/reviews/{id} {
+      allow read: if true;
+    }
+
+    match /produtos/{productId} {
+      allow read: if true; // Publicly readable for price comparison
+      allow write: if isAdmin();
+
+      match /history/{historyId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+      match /avaliacoes/{id} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+      match /reviews/{id} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    match /cupons/{couponId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /comentarios/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidComment();
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+    }
+
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
